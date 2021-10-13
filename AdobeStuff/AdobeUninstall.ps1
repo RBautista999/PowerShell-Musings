@@ -8,6 +8,8 @@ $Apps += Get-ItemProperty "HKLM:\$64BitPath"
 
 $Adobe = $Apps | Where-Object { $_.Publisher -like "*Adobe*" }
 
+# I need to work on the following section a bit more
+
 foreach ($UninstallString in $Adobe.UninstallString){
     $Executable = $UninstallString.split('"')[0]
     $Paramaters = $UninstallString.split('"')[1]
