@@ -5,7 +5,7 @@
 
 
 
-# Check if running with Administrative privileges if required
+# Check if running with Administrative privileges
 $RunningAsAdmin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($RunningAsAdmin -eq $false) {
     Write-Error "Script requires elevation, please re-run as Administrator" -Category AuthenticationError -RecommendedAction "Please re-run script with elevation"
