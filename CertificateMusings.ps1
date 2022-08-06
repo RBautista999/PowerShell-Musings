@@ -1,7 +1,7 @@
 
 $Computers = (Get-ADComputer -LDAPFilter "(&(objectCategory=computer)(operatingSystem=Windows 10*))").Name
 $result = @()
-foreach ($Computer in $Computers) {
+$Result = foreach ($Computer in $Computers) {
     $ErrorActionPreference = "SilentlyContinue"
     if (Test-Connection -TargetName $Computer -Quiet) {
         Write-Host "Connection to $($Computer) succesful" -ForegroundColor Green 
@@ -12,7 +12,7 @@ foreach ($Computer in $Computers) {
         else {
             Write-Host "--->We found a Lightspeed cert, adding result(s) to array<---" -ForegroundColor Cyan
             foreach ($Cert in $GetCert) {
-                $result += [PSCustomObject]@{
+                [PSCustomObject]@{
                     'Computer'    = $Computer;
                     'Certificate' = $Cert.Issuer;
                     'Begins'      = $Cert.GetEffectiveDateString()
@@ -28,4 +28,4 @@ foreach ($Computer in $Computers) {
     
 
 }
-$result | Sort-Object Expires | Export-CSV -NoTypeInformation 'LightspeedCerts.csv'
+$Result | Sort-Object Expires | Export-CSV -NoTypeInformation 'LightspeedCerts.csv'
