@@ -9,6 +9,7 @@ This script creates a Registry key that points towards the PEM created by Lights
 $RunningAsAdmin = (New-Object Security.Principal.WindowsPrincipal([Security.Principal.WindowsIdentity]::GetCurrent())).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if ($RunningAsAdmin -eq $false) {
     Write-Error "Script requires elevation, please re-run as Administrator" -Category AuthenticationError -RecommendedAction "Please re-run script with elevation"
+    
     break
 }
 
