@@ -24,7 +24,7 @@ $DriveTrustedRoot = "TrustedRootCertsFile"
 
 function Get-DriveCert {
     
-    Get-ItemProperty -Path $DrivePath -Name $DriveTrustedRoot
+    Get-ItemProperty -Path $DrivePath -Name $DriveTrustedRoot -ErrorAction SilentlyContinue
     
 }
 
