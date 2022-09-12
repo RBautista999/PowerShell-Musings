@@ -1,3 +1,5 @@
+<##Requires -modules "ActiveDirectory"
+#>
 function Get-DinoPass {
     [CmdletBinding()]
     param (
@@ -38,10 +40,27 @@ function Reset-StudentPass {
     }
 }
 
-function Get-Students {
+function Get-ADAccounts {
     [CmdletBinding()]
     param (
-        [Parameter()]
+        [Parameter(Mandatory = $true, HelpMessage = "Enter path to CSV file")]
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({
+            try {
+                Get-Item -Path $_ -ErrorAction Stop
+            }
+            catch [System.Management.Automation.ItemNotFoundException] {
+                Write-Error -Message "Invalid file path, file does not exist"
+                break
+            }
+            if ($_ -notmatch "(\.csv)$") {
+                Write-Error -Message "File is not a CSV"
+                break
+            }
+            else {
+                return $true
+            }
+        })]
         [string]
         $Path
     )
