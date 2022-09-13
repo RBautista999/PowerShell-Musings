@@ -24,7 +24,7 @@ function Get-RelayCert {
         [Parameter(Mandatory = $False,
             ValueFromPipeline = $True,
             Position = 0)]
-        [string]
+        [string[]]
         $ComputerName,
         [Parameter(Mandatory = $False,
             ValueFromPipeline = $False,
@@ -34,7 +34,11 @@ function Get-RelayCert {
         [Parameter(Mandatory = $False,
             ValueFromPipeline = $False)]
         [switch]
-        $IncludeDates    
+        $IncludeDates,
+        [Parameter(Mandatory = $False,
+            ValueFromPipeline = $False)]
+        [switch]
+        $Expired    
     )
     begin {
         $ObjectParams = @{
@@ -42,13 +46,16 @@ function Get-RelayCert {
             @{Name = "Start Date"; Expression = { $_.NotBefore } },
             @{Name = "Expiration Date"; Expression = { $_.NotAfter } }
         }
-    
     }
     process {
         if ($ComputerName) {
             $Results = $ComputerName | Foreach-Object -ThrottleLimit 10 -Parallel {
+                $ComputerArray = [PSCustomObject]@{
+                    Computer = $PSItem   
+                }
                 if (Test-Connection -TargetName $PSItem -Quiet) {
-                    Write-Output "Connection to $($PSItem) successful"
+                    $ComputerArray | Add-Member -MemberType 'NoteProperty' -Name "Status" -Value "ONLINE"
+                    
                     $RemoteParams = @{
                         ComputerName = $PSItem
                         ScriptBlock  = { Get-ChildItem $args | Where-Object { $_.Subject -like "*Lightspeed*" } }
@@ -57,22 +64,80 @@ function Get-RelayCert {
                     
                     $GetCert = Invoke-Command @RemoteParams
                     if ($null -eq $GetCert) {
-                        Write-Warning "$($PSItem) doesn't have Lightspeed Relay Smart Agent installed"
+                        $NoLSSVParams = @{
+                            MemberType = 'NoteProperty'
+                            Name       = "Lightspeed Status"
+                            Value      = "NOT INSTALLED"
+                        }
+                        $ComputerArray | Add-Member @NoLSSVParams
                     }
                     else {
-                        Write-Host "Adding resuts to array" 
-                        foreach ($Cert in $GetCert) {
-                            [PSCustomObject]@{
-                                'Computer'    = $PSItem
-                                'Certificate' = $Cert.Issuer
-                                'Begins'      = $Cert.GetEffectiveDateString()
-                                'Expires'     = $Cert.GetExpirationDateString()
-                            }
+                        $LSSVParams = @{
+                            MemberType = 'NoteProperty'
+                            Name       = "Lightspeed Status"
+                            Value      = "INSTALLED"
                         }
+                        $ComputerArray | Add-Member @LSSVParams
+                        
+                        <# foreach ($Cert in $GetCert) {
+                            $IssuerParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Issuer"
+                                Value      = $Cert.Issuer
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @IssuerParams
+                            
+                            $BeginDateParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Begins"
+                                Value      = $Cert.GetEffectiveDateString()
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @BeginDateParams
+                            
+                            $ExpiredDateParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Expires"
+                                Value      = $Cert.GetExpirationDateString()
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @ExpiredDateParams  
+                        } #>
+                        $GetCert | ForEach-Object {
+                            $IssuerParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Issuer"
+                                Value      = $Cert.Issuer
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @IssuerParams
+                            
+                            $BeginDateParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Begins"
+                                Value      = $Cert.GetEffectiveDateString()
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @BeginDateParams
+                            
+                            $ExpiredDateParams += @{
+                                MemberType = 'NoteProperty'
+                                Name       = "Expires"
+                                Value      = $Cert.GetExpirationDateString()
+                                Force      = $True
+                            }
+                            $ComputerArray | Add-Member @ExpiredDateParams  
+
+                        }
+
+
                     }
                     
                 }
-                
+                else {
+                    $ComputerArray | Add-Member -MemberType 'NoteProperty' -Name "Status" -Value "OFFLINE"
+                }    
             }
         }
         else {
@@ -81,9 +146,11 @@ function Get-RelayCert {
                 
                 $Cert | Select-Object @ObjectParams
             }
-            else {
-                $Cert
-            }
         }    
+    }
+    end {
+        $Results
     }      
-}   
+} 
+
+Get-RelayCert -ComputerName "MorinPC01" -IncludeDates
